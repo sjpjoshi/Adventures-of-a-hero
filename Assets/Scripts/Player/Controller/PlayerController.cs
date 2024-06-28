@@ -53,22 +53,27 @@ public class PlayerController : MonoBehaviour {
 
     public float CurrentMoveSpeed {
         get {
-            if (IsMoving && !_direction.IsOnWall)
-            {
-                if (_direction.isGround)
+            if (CanMove) {
+                if (IsMoving && !_direction.IsOnWall)
                 {
-                    if (IsRunning)
-                        return runSpeed;
+                    if (_direction.isGround)
+                    {
+                        if (IsRunning)
+                            return runSpeed;
+                        else
+                            return walkSpeed;
+
+                    } // if (_direction.isGround)
                     else
-                        return walkSpeed;
+                        return airWalkSpeed; // moving in the air
 
-                } // if (_direction.isGround)
-                else
-                    return airWalkSpeed; // moving in the air
+                } // if (IsMoving && !_direction.IsOnWall)
+               else
+                    return 0; // Idle speed is 0
 
-            } // if (IsMoving && !_direction.IsOnWall)
-            else
-                return 0; // Idle speed is 0
+            } // if (CanMove)
+            else 
+                return 0; // movement is locked 
 
         } // get
 
@@ -87,6 +92,11 @@ public class PlayerController : MonoBehaviour {
         } // private set
 
     } // isFacingRight
+
+    public bool CanMove {
+        get { return animator.GetBool(AnimatorStrings.canMove); }
+
+    } // CanMove
 
     /// <>
     /// On Compile Time 
@@ -132,15 +142,23 @@ public class PlayerController : MonoBehaviour {
         
     } // OnRun
 
-    public void onJump(InputAction.CallbackContext context) { 
-        
+    public void onJump(InputAction.CallbackContext context) {   
         //TODO check if alive as well
-        if(context.started && _direction.isGround) {
-            animator.SetTrigger(AnimatorStrings.jump);
+        if(context.started && _direction.isGround && CanMove) {
+            animator.SetTrigger(AnimatorStrings.jumpTrigger);
             myRb.velocity = new Vector2(myRb.velocity.x, jumpImpluse);
 
         } // if
 
     } // OnJump
+
+    public void onAttack(InputAction.CallbackContext context) { 
+        
+        if(context.started)
+        {
+            animator.SetTrigger(AnimatorStrings.attackTrigger);
+        }
+
+    } // onAttack
 
 } // PlayerController
