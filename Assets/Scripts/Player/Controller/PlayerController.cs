@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(Rigidbody2D), typeof(TouchingDirections))]
 public class PlayerController : MonoBehaviour {
 
     // movement variables 
@@ -11,13 +11,18 @@ public class PlayerController : MonoBehaviour {
     Vector2 moveInput;
     public float walkSpeed = 5f;
     public float runSpeed = 10f;
+    public float jumpImpluse = 10f;
+    public float airWalkSpeed = 3f;
     public bool _isFacingRight = true;
     private bool _isMoving = false;
     private bool _isRunning = false;
 
+    TouchingDirections _direction;
+
     // Components
     Rigidbody2D myRb;
     Animator animator;
+    
 
     /// <>
     /// Properties
@@ -46,20 +51,24 @@ public class PlayerController : MonoBehaviour {
 
     } // IsRunning 
 
-    public float CurrentMoveSpeed 
-    {
-        get 
-        {
-            if (IsMoving)
+    public float CurrentMoveSpeed {
+        get {
+            if (IsMoving && !_direction.IsOnWall)
             {
-                if (IsRunning)
-                    return runSpeed;
-                else
-                    return walkSpeed;
+                if (_direction.isGround)
+                {
+                    if (IsRunning)
+                        return runSpeed;
+                    else
+                        return walkSpeed;
 
-            } // if
+                } // if (_direction.isGround)
+                else
+                    return airWalkSpeed; // moving in the air
+
+            } // if (IsMoving && !_direction.IsOnWall)
             else
-                return 0; // Idle Speed is 0
+                return 0; // Idle speed is 0
 
         } // get
 
@@ -86,14 +95,14 @@ public class PlayerController : MonoBehaviour {
     void Awake() {
         myRb = GetComponent<Rigidbody2D>(); // our rb2D
         animator = GetComponent<Animator>(); // Animator
+        _direction = GetComponent<TouchingDirections>();
 
     } // Awake
-    void Start() {} // Start
-    void Update() {} // Update
-    void FixedUpdate() {
 
+    void FixedUpdate() {
         //myRb.velocity = new Vector2(moveInput.x * walkSpeed * time.fixedDeltaTime, myRb.velocity.y); Unity Docs state that fixedDeltaTime is now built into R.B 2D
         myRb.velocity = new Vector2(moveInput.x * CurrentMoveSpeed, myRb.velocity.y); // move on X only, y is affected by gravity
+        animator.SetFloat(AnimatorStrings.yVelocity, myRb.velocity.y);
 
     } // FixedUpdate
 
@@ -122,5 +131,16 @@ public class PlayerController : MonoBehaviour {
             IsRunning = false;
         
     } // OnRun
+
+    public void onJump(InputAction.CallbackContext context) { 
+        
+        //TODO check if alive as well
+        if(context.started && _direction.isGround) {
+            animator.SetTrigger(AnimatorStrings.jump);
+            myRb.velocity = new Vector2(myRb.velocity.x, jumpImpluse);
+
+        } // if
+
+    } // OnJump
 
 } // PlayerController
